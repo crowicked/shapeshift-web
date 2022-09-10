@@ -16,6 +16,7 @@ import { foxAssetId } from '@shapeshiftoss/caip'
 import { foxyAddresses } from '@shapeshiftoss/investor-foxy'
 import { DefiProvider } from 'features/defi/contexts/DefiManagerProvider/DefiCommon'
 import qs from 'qs'
+import { useCallback, useMemo } from 'react'
 import { useTranslate } from 'react-polyglot'
 import { useHistory, useLocation } from 'react-router'
 import { AssetIcon } from 'components/AssetIcon'
@@ -55,12 +56,16 @@ export const AssetActions: React.FC<FoxTabProps> = ({ assetId }) => {
     dispatch,
   } = useWallet()
   const { receive } = useModal()
-  const handleWalletModalOpen = () =>
-    dispatch({ type: WalletActions.SET_WALLET_MODAL, payload: true })
-  const handleReceiveClick = () =>
-    isConnected ? receive.open({ asset, accountId }) : handleWalletModalOpen()
+  const handleWalletModalOpen = useCallback(
+    () => dispatch({ type: WalletActions.SET_WALLET_MODAL, payload: true }),
+    [dispatch],
+  )
+  const handleReceiveClick = useCallback(
+    () => (isConnected ? receive.open({ asset, accountId }) : handleWalletModalOpen()),
+    [accountId, asset, handleWalletModalOpen, isConnected, receive],
+  )
 
-  const onGetAssetClick = () => {
+  const handleGetAssetClick = useCallback(() => {
     history.push({
       pathname: location.pathname,
       search: qs.stringify({
@@ -73,7 +78,9 @@ export const AssetActions: React.FC<FoxTabProps> = ({ assetId }) => {
       }),
       state: { background: location },
     })
-  }
+  }, [asset.chainId, history, location])
+
+  const externalLinkIcon = useMemo(() => <ExternalLinkIcon />, [])
 
   return (
     <Card display='block' borderRadius={8}>
@@ -101,7 +108,7 @@ export const AssetActions: React.FC<FoxTabProps> = ({ assetId }) => {
               </SkeletonText>
               <Stack width='full'>
                 {!isFoxAsset && (
-                  <Button onClick={onGetAssetClick} colorScheme={'blue'} mb={2} size='lg'>
+                  <Button onClick={handleGetAssetClick} colorScheme={'blue'} mb={2} size='lg'>
                     <CText>
                       {translate('plugins.foxPage.getAsset', {
                         assetSymbol: asset.symbol,
@@ -115,7 +122,7 @@ export const AssetActions: React.FC<FoxTabProps> = ({ assetId }) => {
                     mb={2}
                     size='lg'
                     as={Link}
-                    leftIcon={<ExternalLinkIcon />}
+                    leftIcon={externalLinkIcon}
                     href={BuyFoxCoinbaseUrl}
                     isExternal
                   >
@@ -147,7 +154,7 @@ export const AssetActions: React.FC<FoxTabProps> = ({ assetId }) => {
                     mb={6}
                     size='lg'
                     as={Link}
-                    leftIcon={<ExternalLinkIcon />}
+                    leftIcon={externalLinkIcon}
                     href={TradeFoxyElasticSwapUrl}
                     isExternal
                   >

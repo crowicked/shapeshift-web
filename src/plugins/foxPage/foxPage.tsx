@@ -1,4 +1,5 @@
 import { ChevronDownIcon } from '@chakra-ui/icons'
+import type { StackDirection } from '@chakra-ui/react'
 import {
   Box,
   Button,
@@ -20,7 +21,7 @@ import { foxAssetId, foxyAssetId } from '@shapeshiftoss/caip'
 import { foxyAddresses } from '@shapeshiftoss/investor-foxy'
 import { DefiProvider } from 'features/defi/contexts/DefiManagerProvider/DefiCommon'
 import qs from 'qs'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useTranslate } from 'react-polyglot'
 import { useHistory, useLocation } from 'react-router'
 import { AssetMarketData } from 'components/AssetHeader/AssetMarketData'
@@ -140,13 +141,38 @@ export const FoxPage = () => {
   })
   const isAssetDescriptionLoaded = !getAssetDescriptionQuery.isLoading
 
-  const handleTabClick = (assetId: AssetId) => {
-    if (assetId === activeAssetId) {
-      return
-    }
+  const stackMaxWidth = useMemo(() => ({ base: 'full', lg: 'sm' }), [])
+  const stackDirection: StackDirection = useMemo(() => ({ base: 'column', xl: 'row' }), [])
+  const gridTemplateColumns = useMemo(() => ({ base: 'repeat(1, 1fr)', lg: 'repeat(3, 1fr)' }), [])
+  const totalIcons = useMemo(() => [assetFox.icon, assetFoxy.icon], [assetFox.icon, assetFoxy.icon])
+  const foxMenuRowMx = useMemo(() => ({ base: 4, md: 0 }), [])
+  const chevronDownIcon = useMemo(() => <ChevronDownIcon />, [])
 
-    history.push(assetsRoutes[assetId])
-  }
+  const handleTabClick = useCallback(
+    (assetId: AssetId) => {
+      if (assetId === activeAssetId) {
+        return
+      }
+
+      history.push(assetsRoutes[assetId])
+    },
+    [activeAssetId, history],
+  )
+
+  const handleMainOpportunityClick = useCallback(() => {
+    history.push({
+      pathname: location.pathname,
+      search: qs.stringify({
+        provider: DefiProvider.ShapeShift,
+        chainId: assetFoxy.chainId,
+        contractAddress: foxyAddresses[0].staking,
+        assetReference: foxyAddresses[0].fox,
+        rewardId: foxyAddresses[0].foxy,
+        modal: 'overview',
+      }),
+      state: { background: location },
+    })
+  }, [assetFoxy.chainId, history, location])
 
   if (!isAssetDescriptionLoaded || !activeAssetId) return null
   if (isFoxyBalancesLoading || !foxyBalancesData) return null
@@ -161,13 +187,8 @@ export const FoxPage = () => {
     >
       <Tabs variant='unstyled' index={selectedAssetIndex}>
         <TabList>
-          <SimpleGrid
-            gridTemplateColumns={{ base: 'repeat(1, 1fr)', lg: 'repeat(3, 1fr)' }}
-            gridGap={4}
-            mb={4}
-            width='full'
-          >
-            <Total fiatAmount={totalFiatBalance} icons={[assetFox.icon, assetFoxy.icon]} />
+          <SimpleGrid gridTemplateColumns={gridTemplateColumns} gridGap={4} mb={4} width='full'>
+            <Total fiatAmount={totalFiatBalance} icons={totalIcons} />
             {isLargerThanMd &&
               assets.map((asset, index) => (
                 <FoxTab
@@ -182,13 +203,13 @@ export const FoxPage = () => {
             {!isLargerThanMd && (
               <Box mb={4}>
                 <Menu matchWidth>
-                  <Box mx={{ base: 4, md: 0 }}>
+                  <Box mx={foxMenuRowMx}>
                     <MenuButton
                       borderWidth='2px'
                       borderColor='primary'
                       height='auto'
                       as={Button}
-                      rightIcon={<ChevronDownIcon />}
+                      rightIcon={chevronDownIcon}
                       bg={mobileTabBg}
                       width='full'
                     >
@@ -222,12 +243,7 @@ export const FoxPage = () => {
         </TabList>
         <TabPanels>
           <TabPanel p={0}>
-            <Stack
-              alignItems='flex-start'
-              spacing={4}
-              mx='auto'
-              direction={{ base: 'column', xl: 'row' }}
-            >
+            <Stack alignItems='flex-start' spacing={4} mx='auto' direction={stackDirection}>
               <Stack spacing={4} flex='1 1 0%' width='full'>
                 <MainOpportunity
                   assetId={selectedAsset.assetId}
@@ -235,20 +251,7 @@ export const FoxPage = () => {
                   tvl={bnOrZero(foxyBalancesData.opportunities?.[0]?.tvl).toString()}
                   isLoaded={!isFoxyBalancesLoading && !isFoxyAprLoading}
                   balance={cryptoBalances[selectedAssetIndex]}
-                  onClick={() => {
-                    history.push({
-                      pathname: location.pathname,
-                      search: qs.stringify({
-                        provider: DefiProvider.ShapeShift,
-                        chainId: assetFoxy.chainId,
-                        contractAddress: foxyAddresses[0].staking,
-                        assetReference: foxyAddresses[0].fox,
-                        rewardId: foxyAddresses[0].foxy,
-                        modal: 'overview',
-                      }),
-                      state: { background: location },
-                    })
-                  }}
+                  onClick={handleMainOpportunityClick}
                 />
 
                 <OtherOpportunities
@@ -258,7 +261,7 @@ export const FoxPage = () => {
                 />
                 <Governance />
               </Stack>
-              <Stack flex='1 1 0%' width='full' maxWidth={{ base: 'full', lg: 'sm' }} spacing={4}>
+              <Stack flex='1 1 0%' width='full' maxWidth={stackMaxWidth} spacing={4}>
                 <AssetActions assetId={foxAssetId} />
                 <TradeOpportunities opportunities={assetsTradeOpportunitiesBuckets[foxAssetId]} />
                 <AssetMarketData assetId={selectedAsset.assetId} />
@@ -267,12 +270,7 @@ export const FoxPage = () => {
             </Stack>
           </TabPanel>
           <TabPanel p={0}>
-            <Stack
-              alignItems='flex-start'
-              spacing={4}
-              mx='auto'
-              direction={{ base: 'column', xl: 'row' }}
-            >
+            <Stack alignItems='flex-start' spacing={4} mx='auto' direction={stackDirection}>
               <Stack spacing={4} flex='1 1 0%' width='full'>
                 <OtherOpportunities
                   title={`plugins.foxPage.otherOpportunitiesTitle.${selectedAsset.symbol}`}
@@ -280,7 +278,7 @@ export const FoxPage = () => {
                   opportunities={otherOpportunities}
                 />
               </Stack>
-              <Stack flex='1 1 0%' width='full' maxWidth={{ base: 'full', lg: 'sm' }} spacing={4}>
+              <Stack flex='1 1 0%' width='full' maxWidth={stackMaxWidth} spacing={4}>
                 <AssetActions assetId={foxyAssetId} />
                 <TradeOpportunities opportunities={assetsTradeOpportunitiesBuckets[foxyAssetId]} />
                 <AssetMarketData assetId={selectedAsset.assetId} />

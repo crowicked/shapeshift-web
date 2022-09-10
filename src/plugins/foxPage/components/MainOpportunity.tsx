@@ -1,9 +1,12 @@
-import { Box, Flex, Skeleton } from '@chakra-ui/react'
-import { Button, Text as CText } from '@chakra-ui/react'
+import type { ResponsiveValue } from '@chakra-ui/react'
+import { Box, Button, Flex, Skeleton, Text as CText } from '@chakra-ui/react'
+import type { Property } from 'csstype'
+import { useMemo } from 'react'
 import { useTranslate } from 'react-polyglot'
 import { Amount } from 'components/Amount/Amount'
 import { AssetIcon } from 'components/AssetIcon'
 import { Card } from 'components/Card/Card'
+import type { TextPropTypes } from 'components/Text/Text'
 import { Text } from 'components/Text/Text'
 import { bnOrZero } from 'lib/bignumber/bignumber'
 import { useFoxyBalances } from 'pages/Defi/hooks/useFoxyBalances'
@@ -36,37 +39,42 @@ export const MainOpportunity = ({
   })
   const hasActiveStaking = bnOrZero(foxyBalancesData?.opportunities?.[0]?.balance).gt(0)
 
+  const mainStakingTitleTranslation: TextPropTypes['translation'] = useMemo(
+    () => [
+      'plugins.foxPage.mainStakingTitle' as const,
+      {
+        assetSymbol: selectedAsset.symbol,
+      },
+    ],
+    [selectedAsset.symbol],
+  )
+
+  const flexDirection: ResponsiveValue<Property.FlexDirection> = useMemo(
+    () => ({ base: 'column', md: 'row' }),
+    [],
+  )
+  const flexCommonProps = useMemo(
+    () => ({
+      flexDirection,
+      alignItems: { base: 'center', md: 'flex-start' },
+      justifyContent: 'space-between',
+      width: 'full',
+    }),
+    [flexDirection],
+  )
+
   return (
     <Card display='block' width='full'>
       <Card.Header>
         <Flex flexDirection='row' alignItems='center' mb={2}>
           <AssetIcon src={selectedAsset.icon} boxSize='6' mr={2} zIndex={2} />
-          <Text
-            fontWeight='bold'
-            color='inherit'
-            translation={[
-              'plugins.foxPage.mainStakingTitle',
-              {
-                assetSymbol: selectedAsset.symbol,
-              },
-            ]}
-          />
+          <Text fontWeight='bold' color='inherit' translation={mainStakingTitleTranslation} />
         </Flex>
         <Text translation='plugins.foxPage.mainStakingDescription' color='gray.500' />
       </Card.Header>
       <Card.Body>
-        <Flex
-          width='full'
-          justifyContent='space-between'
-          gap={4}
-          flexDirection={{ base: 'column', md: 'row' }}
-        >
-          <Flex
-            flexDirection={{ base: 'row', md: 'column' }}
-            width='full'
-            justifyContent='space-between'
-            alignItems={{ base: 'center', md: 'flex-start' }}
-          >
+        <Flex width='full' justifyContent='space-between' gap={4} flexDirection={flexDirection}>
+          <Flex {...flexCommonProps}>
             <Text translation='plugins.foxPage.currentApy' color='gray.500' mb={1} />
             <Skeleton isLoaded={Boolean(apy)}>
               <Box color='green.400' fontSize={'xl'}>
@@ -74,23 +82,13 @@ export const MainOpportunity = ({
               </Box>
             </Skeleton>
           </Flex>
-          <Flex
-            flexDirection={{ base: 'row', md: 'column' }}
-            width='full'
-            justifyContent='space-between'
-            alignItems={{ base: 'center', md: 'flex-start' }}
-          >
+          <Flex {...flexCommonProps}>
             <Text translation='plugins.foxPage.tvl' color='gray.500' mb={1} />
             <Skeleton isLoaded={isLoaded}>
               <Amount.Fiat color='inherit' fontSize={'xl'} fontWeight='semibold' value={tvl} />
             </Skeleton>
           </Flex>
-          <Flex
-            flexDirection={{ base: 'row', md: 'column' }}
-            width='full'
-            justifyContent='space-between'
-            alignItems={{ base: 'center', md: 'flex-start' }}
-          >
+          <Flex {...flexCommonProps}>
             <Text translation='plugins.foxPage.balance' color='gray.500' mb={1} />
             <CText color='inherit' fontSize={'xl'}>
               {balance}
